@@ -1,82 +1,128 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ligooo AI</title>
-<style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#171717;background:#fff}
-.app{max-width:720px;margin:auto;min-height:100vh}header{padding:18px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:2}
-.brand{font-size:24px;font-weight:800}.brand b{color:#ff3d78}.sub{font-size:12px;color:#777;margin-top:3px}
-main{padding:20px}h1{font-size:25px;margin:8px 0}.intro{color:#666;font-size:14px;line-height:1.45;margin-bottom:18px}
-.upload{min-height:240px;border:1.5px dashed #d5d5d5;border-radius:20px;background:#fafafa;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;cursor:pointer}
-.upload img{width:100%;max-height:430px;object-fit:contain}.empty{padding:30px}.gallery{display:inline-block;background:#ff3d78;color:#fff;border-radius:13px;padding:14px 20px;font-weight:700;margin-top:14px}
-.hint{font-size:12px;color:#888;margin-top:8px}.title{font-size:18px;font-weight:800;margin:25px 0 12px}
-.modes{display:grid;grid-template-columns:1fr 1fr;gap:11px}.mode{border:1px solid #ddd;background:#fff;border-radius:16px;padding:15px 12px;font-size:16px;font-weight:700;min-height:62px}
-.mode.sel{background:#171717;color:#fff;border:2px solid #171717}.wide{grid-column:1/-1}
-.generate{width:100%;border:0;border-radius:16px;background:#ff3d78;color:#fff;padding:17px;font-size:18px;font-weight:800;margin-top:20px}
-.generate:disabled{opacity:.55}.result{display:none;margin-top:20px;padding:17px;border-radius:18px;background:#fff4f7;border:1px solid #ffd9e4}
-.result.show{display:block}.answer{font-size:16px;line-height:1.5;white-space:pre-wrap;margin-top:8px}
-.copy{margin-top:12px;border:1px solid #ddd;background:#fff;border-radius:10px;padding:10px 14px;font-weight:700}#err{color:#a00028;font-size:14px;margin-top:10px}
-footer{text-align:center;color:#999;font-size:12px;padding:25px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ligooo AI</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#fff0f6,#f5eaff);color:#24202a;min-height:100vh}
+    .wrap{max-width:760px;margin:auto;padding:28px 18px 50px}
+    .hero{text-align:center;margin-bottom:24px}
+    .logo{font-size:46px;font-weight:900;letter-spacing:-2px}
+    .logo span{color:#ff4f91}
+    .tag{margin:8px 0;color:#6d6472}
+    .card{background:#fff;border-radius:24px;padding:22px;box-shadow:0 10px 35px #00000012;margin:16px 0}
+    h2{margin:0 0 14px;font-size:20px}
+    .drop{border:2px dashed #ff8bb6;border-radius:18px;padding:28px;text-align:center;cursor:pointer;background:#fff8fb}
+    .drop:hover{background:#fff0f6}
+    input[type=file]{display:none}
+    #preview{max-width:100%;max-height:300px;border-radius:16px;margin-top:16px;display:none}
+    .modes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    button{border:0;border-radius:14px;padding:14px;font-size:16px;font-weight:700;cursor:pointer}
+    .mode{background:#f3edf5;color:#413746}
+    .mode.active{background:#ff4f91;color:white}
+    .main{width:100%;background:#ff4f91;color:white;margin-top:18px;font-size:18px}
+    .main:disabled{opacity:.5;cursor:not-allowed}
+    #result{white-space:pre-wrap;line-height:1.55;background:#faf7fb;border-radius:16px;padding:18px;display:none}
+    .small{font-size:13px;color:#817784;text-align:center}
+  </style>
 </head>
 <body>
-<div class="app">
-<header><div><div class="brand">Ligooo <b>AI</b></div><div class="sub">Tu asistente para responder chats</div></div><div>💬</div></header>
-<main>
-<h1>¿Qué quieres responder?</h1>
-<div class="intro">Sube una captura del chat desde tu galería y elige el estilo de respuesta.</div>
+  <div class="wrap">
+    <div class="hero">
+      <div class="logo">Lig<span>ooo</span> ✨</div>
+      <div class="tag">Tu asistente para saber qué responder.</div>
+    </div>
 
-<label class="upload" for="imageInput" id="box">
-<div class="empty" id="empty"><div style="font-size:42px">🖼️</div><b style="font-size:18px">Elige una captura</b><div class="hint">Selecciona una imagen de tu galería.</div><span class="gallery">📱 Elegir de galería</span></div>
-<img id="preview" style="display:none" alt="Vista previa">
-</label>
-<input id="imageInput" type="file" accept="image/*" hidden>
+    <div class="card">
+      <h2>📸 Sube una captura</h2>
+      <label class="drop" for="image">
+        <strong>Toca para elegir una imagen</strong><br>
+        <span class="small">Sube la captura de tu conversación</span>
+        <input id="image" type="file" accept="image/*">
+      </label>
+      <img id="preview" alt="Vista previa">
+    </div>
 
-<div class="title">¿Qué tipo de respuesta quieres?</div>
-<div class="modes">
-<button class="mode" data-mode="caliente">🔥 Caliente</button>
-<button class="mode" data-mode="enamorar">❤️ Enamorar</button>
-<button class="mode" data-mode="chistoso">😂 Chistoso</button>
-<button class="mode" data-mode="salvar">🛟 Salvar</button>
-<button class="mode wide" data-mode="seguro">😎 Seguro</button>
-</div>
+    <div class="card">
+      <h2>💬 ¿Qué estilo quieres?</h2>
+      <div class="modes">
+        <button class="mode active" data-mode="seguro">😎 Seguro</button>
+        <button class="mode" data-mode="caliente">😏 Caliente</button>
+        <button class="mode" data-mode="enamorar">❤️ Enamorar</button>
+        <button class="mode" data-mode="chistoso">😂 Chistoso</button>
+        <button class="mode" data-mode="salvar">🛟 Salvar</button>
+      </div>
+      <button id="generate" class="main" disabled>✨ Dime qué responder</button>
+    </div>
 
-<button class="generate" id="go" disabled>Generar respuestas</button>
-<div id="err"></div>
-<div class="result" id="result"><b>✨ Respuesta sugerida</b><div class="answer" id="answer"></div><button class="copy" id="copy">📋 Copiar respuesta</button></div>
-</main>
-<footer>Ligooo AI</footer>
-</div>
+    <div class="card" id="resultCard" style="display:none">
+      <h2>💡 Ligooo dice:</h2>
+      <div id="result"></div>
+    </div>
+
+    <div class="small">Ligooo AI · Modo demo disponible sin API</div>
+  </div>
 
 <script>
-let file=null,mode='';
-const input=document.getElementById('imageInput'),preview=document.getElementById('preview'),empty=document.getElementById('empty'),go=document.getElementById('go'),err=document.getElementById('err'),result=document.getElementById('result'),answer=document.getElementById('answer');
+let selectedMode="seguro";
+let selectedFile=null;
 
-document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{
- document.querySelectorAll('.mode').forEach(x=>x.classList.remove('sel'));
- b.classList.add('sel');mode=b.dataset.mode;go.disabled=!file;
+const imageInput=document.getElementById("image");
+const preview=document.getElementById("preview");
+const generate=document.getElementById("generate");
+const result=document.getElementById("result");
+const resultCard=document.getElementById("resultCard");
+
+document.querySelectorAll(".mode").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".mode").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedMode=btn.dataset.mode;
+  });
 });
-input.onchange=()=>{
- file=input.files[0]; if(!file)return;
- preview.src=URL.createObjectURL(file);preview.style.display='block';empty.style.display='none';go.disabled=!mode;err.textContent='';
-};
-go.onclick=async()=>{
- if(!file||!mode)return;
- go.disabled=true;go.textContent='Generando...';err.textContent='';result.classList.remove('show');
- try{
-  const image=await new Promise((resolve,reject)=>{let r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)});
-  const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image,mimeType:file.type,mode})});
-  if(!r.ok)throw Error();
-  const data=await r.json();if(!data.answer)throw Error();
-  answer.textContent=data.answer;result.classList.add('show');
- }catch(e){err.textContent='No se pudo conectar con la IA. Revisa que el backend esté desplegado en Render.'}
- finally{go.disabled=false;go.textContent='Generar respuestas'}
-};
-document.getElementById('copy').onclick=async()=>{
- try{await navigator.clipboard.writeText(answer.textContent);document.getElementById('copy').textContent='✅ Copiado';setTimeout(()=>document.getElementById('copy').textContent='📋 Copiar respuesta',1500)}catch(e){}
-};
+
+imageInput.addEventListener("change",()=>{
+  selectedFile=imageInput.files[0]||null;
+  if(!selectedFile)return;
+  preview.src=URL.createObjectURL(selectedFile);
+  preview.style.display="block";
+  generate.disabled=false;
+});
+
+generate.addEventListener("click",async()=>{
+  if(!selectedFile)return;
+  generate.disabled=true;
+  generate.textContent="⏳ Pensando...";
+  resultCard.style.display="block";
+  result.style.display="block";
+  result.textContent="Ligooo está analizando la captura...";
+
+  const reader=new FileReader();
+  reader.onload=async()=>{
+    try{
+      const response=await fetch("/api/generate",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          image:reader.result,
+          mimeType:selectedFile.type,
+          mode:selectedMode
+        })
+      });
+      const data=await response.json();
+      if(!response.ok) throw new Error(data.error||"Error del servidor");
+      result.textContent=data.answer||"No recibí una respuesta.";
+    }catch(e){
+      result.textContent="⚠️ "+e.message;
+    }finally{
+      generate.disabled=false;
+      generate.textContent="✨ Dime qué responder";
+    }
+  };
+  reader.readAsDataURL(selectedFile);
+});
 </script>
 </body>
 </html>
