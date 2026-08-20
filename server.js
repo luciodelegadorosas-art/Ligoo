@@ -5,22 +5,27 @@ import { fileURLToPath } from "node:url";
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.use(express.json({ limit: "12mb" }));
+app.use(express.json({ limit: "20mb" }));
 app.use(express.static(__dirname));
 
 const styles = {
   caliente: "coqueta, atrevida y con chispa, sin ser vulgar",
   enamorar: "romántica, dulce y encantadora",
-  chistoso: "graciosa, natural y con buen humor",
-  salvar: "ayuda a salir de la situación con una respuesta inteligente y natural",
-  seguro: "segura de sí misma, tranquila y con personalidad"
+  chistoso: "graciosa, espontánea y con buen humor",
+  salvar: "inteligente, natural y capaz de arreglar la situación",
+  seguro: "segura, tranquila, natural y con personalidad"
 };
 
 app.get("/api/health", (req, res) => {
-  res.json({ ok: true, aiConfigured: Boolean(process.env.OPENAI_API_KEY) });
+  res.json({
+    ok: true,
+    aiConfigured: Boolean(process.env.OPENAI_API_KEY),
+    model: process.env.OPENAI_MODEL || "gpt-5.6"
+  });
 });
 
 app.post("/api/generate", async (req, res) => {
@@ -28,54 +33,100 @@ app.post("/api/generate", async (req, res) => {
     const { image, mimeType, mode } = req.body;
 
     if (!image || !mode) {
-      return res.status(400).json({ error: "Faltan la imagen o el estilo." });
+      return res.status(400).json({
+        error: "Falta la captura o el estilo."
+      });
     }
 
-    // Permite probar la web sin pagar una API todavía.
     if (!process.env.OPENAI_API_KEY) {
-      const demo = {
-        caliente: "😏 Podrías responder: “Mmm… ¿y esa indirecta viene con explicación o me toca descubrirla?”",
-        enamorar: "❤️ Podrías responder: “Jajaja, contigo siempre termino sonriendo. Me gusta hablar contigo.”",
-        chistoso: "😂 Podrías responder: “JAJAJA, espera… necesito procesar semejante mensaje 😂”",
-        salvar: "🛟 Podrías responder: “Jajaja, creo que me expliqué mal 😅. Lo que quería decir era otra cosa.”",
-        seguro: "😎 Podrías responder: “Tranqui, yo sé lo que dije 😌. Ahora te toca responder a ti.”"
-      };
-      return res.json({ answer: demo[mode] || demo.seguro, demo: true });
+      return res.status(503).json({
+        error: "La IA todavía no está configurada en Render.",
+        code: "AI_NOT_CONFIGURED"
+      });
     }
 
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
     const dataUrl = image.startsWith("data:")
       ? image
       : `data:${mimeType || "image/jpeg"};base64,${image}`;
 
     const response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-5.6-luna",
-      input: [{
-        role: "user",
-        content: [
-          {
-            type: "input_text",
-            text:
-              `Analiza la captura de pantalla del chat. Identifica el último mensaje relevante ` +
-              `y crea 3 respuestas cortas en español para que el usuario pueda elegir. ` +
-              `El estilo solicitado es: ${styles[mode] || styles.seguro}. ` +
-              `No inventes información que no aparezca en la captura. ` +
-              `Devuelve solamente las 3 opciones numeradas, sin explicaciones largas.`
-          },
-          {
-            type: "input_image",
-            image_url: dataUrl,
-            detail: "auto"
-          }
-        ]
-      }]
+      model: process.env.OPENAI_MODEL || "gpt-5.6",
+      input: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: `
+Eres Ligooo, un asistente que ayuda a una persona a contestar chats.
+
+Mira cuidadosamente TODA la captura.
+
+Primero entiende:
+- quién está hablando;
+- cuál fue el último mensaje importante;
+- qué tono tiene la conversación;
+- qué se está insinuando o preguntando;
+- qué respuesta tendría sentido en ese contexto.
+
+Después crea exactamente 3 respuestas que la persona pueda enviar directamente.
+
+ESTILO:
+${styles[mode] || styles.seguro}
+
+REGLAS IMPORTANTES:
+- Las respuestas deben tener sentido con ESTA conversación.
+- No inventes información que no aparezca.
+- No uses frases genéricas al azar.
+- No digas "Podrías responder".
+- No digas "Aquí tienes".
+- No expliques tu razonamiento.
+- No pongas títulos.
+- No pongas números.
+- Cada respuesta debe estar lista para copiar y enviar.
+- Deben sonar como una persona real escribiendo por WhatsApp o Instagram.
+- Mantén el español natural.
+- Haz que las tres opciones sean diferentes entre sí.
+- Si la conversación es coqueta, entiende el coqueteo.
+- Si la otra persona está molesta, no respondas alegremente sin motivo.
+- Si hay una pregunta concreta, contéstala.
+- Si falta contexto, usa solamente lo que pueda verse en la captura.
+
+Devuelve únicamente las 3 respuestas separadas por una línea en blanco.
+`
+            },
+            {
+              type: "input_image",
+              image_url: dataUrl,
+              detail: "high"
+            }
+          ]
+        }
+      ]
     });
 
-    res.json({ answer: response.output_text });
+    const answer = (response.output_text || "").trim();
+
+    if (!answer) {
+      return res.status(502).json({
+        error: "La IA no devolvió ninguna respuesta."
+      });
+    }
+
+    res.json({
+      answer,
+      demo: false
+    });
+
   } catch (error) {
-    console.error(error);
+    console.error("ERROR OPENAI:", error);
+
     res.status(500).json({
-      error: "No se pudo generar la respuesta.",
+      error: "No se pudo conectar con la IA.",
       detail: error?.message || "Error desconocido"
     });
   }
@@ -88,4 +139,3 @@ app.get("/{*splat}", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Ligooo escuchando en el puerto ${PORT}`);
 });
-
